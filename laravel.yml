@@ -66,10 +66,10 @@ jobs:
 
       - name: Build de l’image Docker
         run: |
-          docker build -t ayibgoat/gestionservicecours:latest .
+          docker build -t aissatou24/laravelexamen:latest .
 
       - name: Push de l’image Docker (Privé)
         run: |
-          docker tag ayibgoat/gestionservicecours:latest ayibgoat/gestionservicecours:${{ github.sha }}
-          docker push ayibgoat/gestionservicecours:latest
-          docker push ayibgoat/gestionservicecours:${{ github.sha }}
+          docker tag aissatou24/laravelexamen:latest aissatou24/laravelexamen:${{ github.sha }}
+          docker push aissatou24/laravelexamen:latest
+          docker push aissatou24/laravelexamen:${{ github.sha }}
