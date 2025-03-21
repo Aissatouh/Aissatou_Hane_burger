@@ -1,0 +1,75 @@
+name: Laravel CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupération du code source
+        uses: actions/checkout@v4
+
+      - name: Configuration de PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer, phpunit, phpstan, pint
+
+      - name: Installation des dépendances
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Configuration de l'environnement
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env  # Utilisation de SQLite en mémoire
+          php artisan migrate --env=testing
+
+      - name: Build du projet
+        run: php artisan config:cache
+
+      - name: Vérification de la qualité du code avec PHPStan
+        run: vendor/bin/phpstan analyze app --memory-limit=1G
+
+      - name: Exécution des tests unitaires
+        run: php artisan test
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupération du code source
+        uses: actions/checkout@v4
+
+      - name: Vérification de la présence de Docker
+        run: docker --version
+
+      - name: Connexion à Docker Hub (Privé)
+        run: |
+          # Vérifier que les secrets sont définis
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "Erreur : DOCKER_USERNAME ou DOCKER_PASSWORD n'est pas défini dans les secrets GitHub."
+            exit 1
+          fi
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build de l’image Docker
+        run: |
+          docker build -t ayibgoat/gestionservicecours:latest .
+
+      - name: Push de l’image Docker (Privé)
+        run: |
+          docker tag ayibgoat/gestionservicecours:latest ayibgoat/gestionservicecours:${{ github.sha }}
+          docker push ayibgoat/gestionservicecours:latest
+          docker push ayibgoat/gestionservicecours:${{ github.sha }}
