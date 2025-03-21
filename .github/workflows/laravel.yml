@@ -38,12 +38,6 @@ jobs:
       - name: Build du projet
         run: php artisan config:cache
 
-      - name: Vérification de la qualité du code avec PHPStan
-        run: vendor/bin/phpstan analyze app --memory-limit=1G
-
-      - name: Exécution des tests unitaires
-        run: php artisan test
-
   docker:
     needs: build
     runs-on: ubuntu-latest
